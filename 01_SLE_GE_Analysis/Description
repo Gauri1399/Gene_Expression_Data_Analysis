@@ -1,0 +1,24 @@
+
+# Description
+
+This R script performs a basic exploratory analysis of gene expression data comparing "SLE (Systemic Lupus Erythematosus)" patient B cells to normal control B cells. The dataset contains probeset-level expression values.
+
+## Key Steps in the Analysis:
+
+1. **Load Expression Data**
+   The data is read from a tab-delimited text file, with rows as probesets and columns as samples.
+
+2. **Inspect Dataset**
+   The script checks the dimensions and sample names to verify the structure of the data.
+
+3. **Scatter Plots**
+   * A plot comparing all probesets between a control and an SLE sample.
+   * A focused plot on the first 20 probesets for better clarity.
+
+4. **Gene Profile Plot**
+   For the gene **IGLJ3** (probeset ID: `211881_x_at`), the expression profile across all samples is plotted to observe trends and variability.
+
+5. **Boxplot by Condition**
+   The expression of IGLJ3 is compared between **SLE** and **Control** groups using a boxplot with individual sample points overlaid to highlight distribution.
+
+This script serves as an introductory analysis pipeline for visualizing and interpreting gene expression differences between disease and control conditions, useful for transcriptomic studies in autoimmune diseases like SLE.
