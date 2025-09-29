@@ -22,3 +22,5 @@ This R script performs a basic exploratory analysis of gene expression data comp
    The expression of IGLJ3 is compared between **SLE** and **Control** groups using a boxplot with individual sample points overlaid to highlight distribution.
 
 This script serves as an introductory analysis pipeline for visualizing and interpreting gene expression differences between disease and control conditions, useful for transcriptomic studies in autoimmune diseases like SLE.
+
+The R Markdown file (.Rmd) contains the full analysis with embedded plots, and the knitted HTML file provides a clean, interactive report with all results and visualizations combined. The HTML file is included to allow easy sharing and viewing of the analysis without needing R.
