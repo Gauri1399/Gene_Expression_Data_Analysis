@@ -1,0 +1,64 @@
+---
+title: "SLE B Cell Gene Expression Analysis"
+output: html_document
+---
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+# 1. Load the Data
+# Task: Load expression data containing probeset intensities across 26 samples (SLE and control B cells).
+data <- read.table("Data/01_sle_b_cell.txt", header = TRUE, row.names = 1)
+
+# Task: Check dimensions of the data (probesets x samples)
+print(dim(data))  # Expecting number of probesets and 26 samples
+
+# Task: Print sample names (column names)
+print(colnames(data))
+
+# 2. Plot SLE patient sample vs Normal control sample (all probesets)
+# Task: Visualize expression intensities of all probesets for SLE sample 2 vs Control sample 1
+plot(data$control.1, data$sle.2,
+     xlab = "Normal",
+     ylab = "SLE",
+     col = "lightblue",
+     main = "SLE B cell sample vs. Normal B cell sample – all probesets")
+grid(col = "grey")
+
+# 3. Plot the first 20 probesets only
+# Task: Visualize first 20 probesets only for better clarity
+plot(data$control.1[1:20], data$sle.2[1:20],
+     xlab = "Normal",
+     ylab = "SLE",
+     col = "orange",
+     pch = 15,
+     main = "SLE B cell sample vs. Normal B cell sample – 20 probesets")
+grid(col = "grey")
+
+# 4. Gene profile plot of IGLJ3 (probeset ID: 211881_x_at)
+# Task: Plot gene expression profile across all samples for probe 211881_x_at (IGLJ3)
+gene_id <- "211881_x_at"
+gene_vector <- as.numeric(data[gene_id, ])
+
+plot(range(1:ncol(data)), range(gene_vector),
+     xlab = "Sample indices",
+     ylab = "Intensities",
+     type = "n",
+     main = "Gene profile of IGLJ3")
+lines(1:ncol(data), gene_vector, col = "red", lwd = 3)
+grid(col = "grey")
+
+# 5. Boxplot of IGLJ3 expression by condition
+# Task: Compare IGLJ3 expression in SLE vs Control groups using boxplot + stripchart
+cohorts <- factor(c(rep("SLE", 17), rep("Control", 9)))
+
+boxplot(gene_vector ~ cohorts,
+        xlab = "Condition",
+        ylab = "Expression intensity",
+        col = c("red", "green"),
+        main = "Expression of IGLJ3 in SLE vs Control group")
+
+stripchart(gene_vector ~ cohorts,
+           vertical = TRUE,
+           method = "jitter",
+           pch = 19,
+           col = "blue",
+           add = TRUE)
