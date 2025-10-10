@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 1. Load dataset using read.table() function and header=T/row.names=1 arguments.
 ```{r}
-rat_dataset = read.table("/Users/gauri1399/Desktop/Classes/Sem 3/Gene expression/Lab 5/rat_KD.txt", header=T, row.names=1)
+rat_dataset = read.table("Data/05_rat_KD.txt", header=T, row.names=1)
 ```
 
 2. First log2 the data, then use the Student’s t-test function in the notes to calculate the changing genes between the control diet and ketogenic diet classes.  
