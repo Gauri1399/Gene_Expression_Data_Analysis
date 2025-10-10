@@ -1,0 +1,30 @@
+
+## Rat Gene Expression Analysis: Ketogenic vs Control Diet
+
+This project performs differential gene expression analysis on rat microarray data to compare the effects of a **ketogenic diet** versus a **control diet**. Using statistical methods such as **t-tests**, **fold-change analysis**, and **volcano plots**, the analysis identifies significantly differentially expressed genes.
+
+---
+
+### Features:
+
+* Log2 transformation of gene expression data
+* Group separation based on diet (control vs ketogenic)
+* Student's t-tests for each probeset
+* p-value histogram and Bonferroni correction
+* Calculation of fold change (log2 and linear scale)
+* Identification of significant genes
+* Volcano plot visualization
+
+---
+
+### Files:
+
+* `rat_KD.txt`: Input gene expression dataset
+---
+
+### Tools Used:
+
+* R / R Markdown
+* Base R functions: `t.test()`, `log2()`, `hist()`, `plot()`
+* Basic statistical and data visualization techniques
+
