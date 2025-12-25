@@ -29,7 +29,7 @@ This project provides an **interactive Shiny app** to explore **yeast gene expre
 ## How to Run
 
 1. Clone the repository.  
-2. Find the `02_Paul_spellman.txt` in the `Data/` folder.  
+2. Find the `02_Paul_Spellman.txt` in the `Data/` folder.  
 3. Open `02_cdc15_shiny_app.R` in RStudio.  
 4. Click **Run App** to launch the interactive Shiny application.  
 
