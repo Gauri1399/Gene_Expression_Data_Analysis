@@ -1,0 +1,79 @@
+---
+title: "Yeast cdc15 Arrest Gene Expression Analysis"
+author: "Gauri Agrawal"
+date: "2025-12-25"
+output: html_document
+---
+
+# Gene Expression Analysis Across cdc15 Arrest Time Points
+
+This project explores **temporal gene expression dynamics** in yeast after cdc15 arrest.  
+It includes correlation analysis, individual gene expression profiling, and an interactive Shiny app to explore relationships between time points.
+
+```{r full-analysis, echo=TRUE, message=FALSE, warning=FALSE}
+# Load required libraries
+library(ggplot2)
+library(reshape2)
+library(shiny)
+
+# 1. Load the data
+data_cdc15 <- read.table("/Users/gauri1399/Desktop/Classes/Sem3/Gene expression/Lab2/02_Paul_Spellman.txt", header = TRUE, row.names = 1)
+
+# 2. Compute correlation matrix
+cor_matrix <- cor(data_cdc15, use = "pairwise.complete.obs")
+
+# 3. Plot correlation heatmap
+cor_df <- melt(cor_matrix)
+ggplot(cor_df, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "darkred", mid ="white", high = "seagreen",
+                       midpoint = 0, name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Correlation Heatmap of Gene Expression Over Time",
+       x = "Time (minutes)", y = "Time (minutes)")
+
+# 4. Gene expression profile for example gene "YAL002W"
+gene_id <- "YAL002W"
+gene_values <- as.numeric(data_cdc15[gene_id, ])
+gene_values[is.na(gene_values)] <- mean(gene_values, na.rm = TRUE)
+time_points <- gsub("cdc15_", "", colnames(data_cdc15))
+
+plot(time_points, gene_values, type = "o", col = "blue", lwd = 2,
+     xlab = "Time after cdc15 arrest (minutes)",
+     ylab = "Expression",
+     main = paste("Gene Expression Profile for", gene_id))
+
+# 5. Shiny app to interactively explore correlations
+# NOTE: Set eval=FALSE when knitting; run separately in RStudio to use the app
+if(interactive()){
+  ui <- fluidPage(
+    titlePanel("Gene Expression Correlation Across Time Points"),
+    sidebarLayout(
+      sidebarPanel(
+        selectInput('xcol', 'Select X Time Point', choices = colnames(data_cdc15), selected = colnames(data_cdc15)[1]),
+        selectInput('ycol', 'Select Y Time Point', choices = colnames(data_cdc15), selected = colnames(data_cdc15)[2]),
+        numericInput('clusters', 'Cluster Count', value = 2, min = 1, max = 9)
+      ),
+      mainPanel(plotOutput("plot1"))
+    )
+  )
+  
+  server <- function(input, output) {
+    selectedData <- reactive({
+      req(input$xcol, input$ycol)
+      data.frame(x_data = data_cdc15[[input$xcol]], y_data = data_cdc15[[input$ycol]])
+    })
+    
+    output$plot1 <- renderPlot({
+      data <- selectedData()
+      correlation <- cor(data$x_data, data$y_data, use = "complete.obs")
+      plot(data$x_data, data$y_data,
+           main = paste(input$xcol, "vs", input$ycol, "\nCorrelation:", round(correlation, 2)),
+           xlab = input$xcol, ylab = input$ycol,
+           col = "blue", pch = 16)
+    })
+  }
+  
+  shinyApp(ui = ui, server = server)
+}
