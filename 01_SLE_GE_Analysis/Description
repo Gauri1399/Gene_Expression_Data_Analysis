@@ -1,6 +1,6 @@
 # Renal Cell Carcinoma (RCC) Gene Expression Analysis
 
-This project analyzes **gene expression patterns in Renal Cell Carcinoma (RCC)** and normal kidney samples. The workflow explores sample relationships, detects outliers, examines gene variability, and visualizes differences between tumor and normal conditions.
+This project analyzes **gene expression patterns in Renal Cell Carcinoma (RCC)** and normal kidney samples. The workflow explores sample relationships, detects outliers, examines gene variability, and visualizes differences between tumor and normal conditions. The goal is to highlight **genes and pathways that may contribute to RCC development and progression**, providing insights into potential biomarkers or therapeutic targets.
 
 ## Data
 
@@ -17,6 +17,13 @@ This project analyzes **gene expression patterns in Renal Cell Carcinoma (RCC)**
 6. **Gene Profile Visualization** – Plot expression of individual genes across all samples.  
 7. **Boxplots by Condition** – Compare gene expression between tumor and normal samples.  
 
+## Biological Significance
+
+- Highlights genes **differentially expressed in RCC tumors** versus normal tissue.  
+- Provides insights into molecular mechanisms involved in **tumor development, progression, and metabolism**.  
+- Can help identify **potential biomarkers** for RCC diagnosis or prognosis.  
+- Offers candidate genes for **therapeutic targeting** or further experimental validation.  
+
 ## Output
 
 - **Interactive HTML Report**: Generated from the `.Rmd` file, contains all plots and tables.  
@@ -32,5 +39,4 @@ This project analyzes **gene expression patterns in Renal Cell Carcinoma (RCC)**
 ## Requirements
 
 - R ≥ 4.0  
-- R packages: `DESeq2`, `SummarizedExperiment`, `openxlsx`, `GEOquery`, `BiocManager`  
-
+- R packages: `DESeq2`, `SummarizedExperiment`, `openxlsx`, `GEOquery`, `BiocManager`
