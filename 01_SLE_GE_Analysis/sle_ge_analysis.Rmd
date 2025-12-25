@@ -19,7 +19,7 @@ plot(data$control.1, data$sle.2,
      main = "SLE B cell sample vs. Normal B cell sample – all probesets")
 grid(col = "grey")
 
-# 3. Visualize the first 20 probesets only
+# Visualize the first 20 probesets only
 plot(data$control.1[1:20], data$sle.2[1:20],
      xlab = "Normal",
      ylab = "SLE",
