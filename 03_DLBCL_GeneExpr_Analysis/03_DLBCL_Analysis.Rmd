@@ -1,0 +1,127 @@
+
+---
+title: "DLBCL Gene Expression Analysis: Variability and Power Estimation"
+author: "Gauri Agrawal"
+date: "2025-12-25"
+output: html_document
+---
+
+```{r full-analysis, echo=TRUE, message=FALSE, warning=FALSE}
+
+## 1. Load Expression Data and Class Labels
+
+eisen <- read.table(
+file = "Data/03_eisen.txt",
+header = TRUE, row.names = 1, na.strings = "NA", blank.lines.skip = FALSE
+)
+
+eisenClasses <- read.table(
+file = "Data/03_eisenClasses.txt",
+header = TRUE
+)
+
+## 2. Align Samples and Classes
+
+samples <- eisenClasses$sample
+classes <- eisenClasses$class
+
+# Match and reorder
+
+match_idx <- match(samples, colnames(eisen))
+ordered_classes <- classes[match_idx]
+class_order <- order(ordered_classes)
+eisen_reordered <- eisen[, match_idx[class_order]]
+
+## 3. Gene-Level Expression Comparison
+
+# Select gene 100 for illustration
+
+gene_expr <- as.numeric(eisen[100, ])
+gene_classes <- eisenClasses$class[match(colnames(eisen), eisenClasses$sample)]
+
+# Remove NA
+
+valid <- !is.na(gene_expr)
+gene_values <- gene_expr[valid]
+gene_classes <- gene_classes[valid]
+
+## 4. Boxplot of Gene Expression
+
+boxplot(gene_values ~ gene_classes,
+col = c("red", "blue"),
+xlab = "Biological Class",
+ylab = "Gene Expression",
+main = "Gene Expression Differences Between Classes")
+
+## 5. Histograms for Each Class
+
+par(mfrow = c(2, 1))
+hist(gene_values[gene_classes == 1], col = "red", main = "Expression - Class 1",
+xlab = "Gene Expression", breaks = 10)
+hist(gene_values[gene_classes == 2], col = "blue", main = "Expression - Class 2",
+xlab = "Gene Expression", breaks = 10)
+par(mfrow = c(1, 1))
+
+## 6. Power and Sample Size Estimation
+
+x <- gene_values[gene_classes == 1]
+y <- gene_values[gene_classes == 2]
+
+nx <- length(x)
+ny <- length(y)
+
+# Pooled standard deviation
+
+pool_sd <- sqrt(((nx - 1) * sd(x)^2 + (ny - 1) * sd(y)^2) / (nx + ny - 2))
+
+# Effect sizes for 1.5-fold and 3-fold changes
+
+effect_1.5 <- log2(1.5) / pool_sd
+effect_3 <- log2(3) / pool_sd
+
+# Calculate sample size for power = 0.8, alpha = 0.01
+
+power_1.5fold <- power.t.test(d = effect_1.5, sig.level = 0.01, power = 0.8, type = "two.sample")
+power_3fold <- power.t.test(d = effect_3, sig.level = 0.01, power = 0.8, type = "two.sample")
+
+power_1.5fold
+power_3fold
+
+## 7. Transcriptome-Wide Variability
+
+# Standard deviation of all genes
+
+gene_sd <- apply(eisen, 1, sd, na.rm = TRUE)
+
+# Histogram of variability
+
+hist(gene_sd, breaks = 20, col = "red", border = "blue",
+xlab = "Standard Deviation", main = "Distribution of Gene Expression Variability")
+
+# Overlay density
+
+dens <- density(gene_sd)
+hist_info <- hist(gene_sd, breaks = 20, plot = FALSE)
+lines(dens$x, dens$y * max(hist_info$counts) / max(dens$y), col = "black", lwd = 2)
+
+## 8. Sample Size Across All Genes
+
+# Using ssize package if installed (or skip if not)
+
+if ("ssize" %in% rownames(installed.packages())) {
+library(ssize)
+
+delta <- log2(3)
+power <- 0.8
+sig.level <- 0.05
+
+all.size <- ssize(sd = gene_sd, delta = delta, sig.level = sig.level, power = power)
+
+# Plot proportion of genes vs sample size
+
+ssize.plot(all.size, lwd = 2, col = "blue", xlim = c(1, 20), xlab = "", ylab = "")
+title(xlab = "Sample size (per group)", ylab = "Proportion of Genes")
+title("Proportion of Genes vs Sample Size")
+}
+
+```
