@@ -1,127 +1,63 @@
 ---
-title: "05_rat_keto_vs_ctrl"
+title: "Rat Ketogenic vs Control Diet Gene Expression Analysis"
 author: "Gauri Agrawal"
-date: "2025-10-10"
+date: "2025-12-25"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 
-1. Load dataset using read.table() function and header=T/row.names=1 arguments.
-```{r}
-rat_dataset = read.table("Data/05_rat_KD.txt", header=T, row.names=1)
-```
+# Rat Ketogenic vs Control Diet Gene Expression Analysis
 
-2. First log2 the data, then use the Student’s t-test function in the notes to calculate the changing genes between the control diet and ketogenic diet classes.  
-```{r}
-log2_rat_dataset = log2(rat_dataset+1)
+# 1. Load the dataset
+rat_dataset <- read.table("Data/05_rat_KD.txt", header=TRUE, row.names=1)
+cat("Dataset dimensions (genes x samples):", dim(rat_dataset), "\n")
+head(rat_dataset)
 
-# Extract the column name to separate them into ketogenic and control diet
-diet_type = colnames(rat_dataset)
-control_cols = grep("control.diet", diet_type, value = TRUE)
-keto_cols = grep("ketogenic.diet", diet_type, value = TRUE)
+# 2. Log2 transformation
+log2_rat_dataset <- log2(rat_dataset + 1)  
 
-t_test_pvalues = apply(log2_rat_dataset, 1, function(gene_expr) {
-  control_vals = as.numeric(gene_expr[control_cols])
-  keto_vals = as.numeric(gene_expr[keto_cols])
-  
-  # Student’s t-test with equal variance assumption
-  t.test(control_vals, keto_vals, var.equal = TRUE)$p.value
+# Separate columns by diet
+control_cols <- grep("control.diet", colnames(rat_dataset), value=TRUE)
+keto_cols <- grep("ketogenic.diet", colnames(rat_dataset), value=TRUE)
+
+# 3. Student's t-test to check if the mean expression differs between diet groups
+t_test_pvalues <- apply(log2_rat_dataset, 1, function(gene_expr){
+  t.test(as.numeric(gene_expr[control_cols]),
+         as.numeric(gene_expr[keto_cols]), var.equal=TRUE)$p.value
 })
 
-```
-
-3. Plot a histogram of the p-values and report how many probesets have a p<.05 and p<.01.  Then divide an alpha of 0.05 by the total number of probesets and report how many probesets have a p-value less than this value.  This is a very conservative p-value thresholding method to account for multiple testing called the Bonferroni correction 
-```{r}
-hist(t_test_pvalues,
-     breaks = 50,
-     col = "skyblue",
-     main = "Histogram of p-values from t-tests",
-     xlab = "p-value",
-     ylab = "Frequency")
-
-# Find p values less than 0.05 and 0.01
-p_0.05 = sum(t_test_pvalues < 0.05, na.rm = TRUE)
-p_0.01 = sum(t_test_pvalues < 0.01, na.rm = TRUE)
-
-# Print the values
-cat("Number of probesets with p < 0.05:", p_0.05, "\n")
-cat("Number of probesets with p < 0.01:", p_0.01, "\n")
-
-# Find the Bonferroni alpha
-num_probesets = length(t_test_pvalues)
-bonferroni_alpha = 0.05 / num_probesets
-num_bonferroni = sum(t_test_pvalues < bonferroni_alpha, na.rm = TRUE)
-
-# Print the probesets less than Bonferroni alpha 
+# 4. Histogram of p-values and Bonferroni correction
+hist(t_test_pvalues, breaks=50, col="skyblue",
+     main="Histogram of p-values from t-tests",
+     xlab="p-value", ylab="Frequency")
+p_0.05 <- sum(t_test_pvalues < 0.05, na.rm=TRUE)
+p_0.01 <- sum(t_test_pvalues < 0.01, na.rm=TRUE)
+cat("Probesets with p < 0.05:", p_0.05, "\n")
+cat("Probesets with p < 0.01:", p_0.01, "\n")
+bonferroni_alpha <- 0.05 / length(t_test_pvalues)
 cat("Bonferroni-corrected alpha:", bonferroni_alpha, "\n")
-cat("Number of probesets with p <", bonferroni_alpha, ":", num_bonferroni, "\n")
 
-```
+# 5. Calculate mean expression and fold changes to quantify magnitude of expression difference 
+keto_log2_mean <- rowMeans(log2_rat_dataset[, keto_cols], na.rm=TRUE)
+control_log2_mean <- rowMeans(log2_rat_dataset[, control_cols], na.rm=TRUE)
+log2_fold_change <- keto_log2_mean - control_log2_mean
+fold_change <- 2 ^ log2_fold_change
 
-4. Next calculate the mean for each gene, and calculate the fold change between the groups (control vs. ketogenic diet).  
-```{r}
-# Calculate mean for each gene
-gene_means = rowMeans(log2_rat_dataset, na.rm = TRUE)
-head(gene_means)
+# Display basic stats
+cat("Max fold change:", max(fold_change), " Min fold change:", min(fold_change), "\n")
 
-# Calculate fold change
-keto_log2_mean = rowMeans(log2_rat_dataset[keto_cols], na.rm = TRUE)
-control_log2_mean = rowMeans(log2_rat_dataset[control_cols], na.rm = TRUE)
-
-log2_fold_change = keto_log2_mean - control_log2_mean 
-fold_change = 2 ^ log2_fold_change
-
-# Print values
-cat("\n Mean for each gene:\n")
-print(head(gene_means)) 
-
-cat("\n Mean for keto group:\n")
-print(head(keto_log2_mean))
-
-cat("\n Mean for control group:\n")
-print(head(control_log2_mean))
-
-cat("\n Log2 Fold Change:\n")
-print(head(log2_fold_change))
-
-cat("\nFold Change:\n")
-print(head(fold_change))
-
-```
-
-5. What is the maximum and minimum fold change value, please report on the linear scale?  Now report the probesets with a p-value less than the Bonferroni threshold you used in question 4 and |fold change|>2
-```{r}
-# Find the maximum and minimum fold change value
-max(fold_change)
-min(fold_change)
-
-# Find significant p values 
-significant_index = which(t_test_pvalues < bonferroni_alpha & abs(log2_fold_change) > 1)
-significant_genes = rownames(log2_rat_dataset)[significant_index]
+# 6. Identify significant genes based on Bonferroni-significant p-value & fold change 
+sig_index <- which(t_test_pvalues < bonferroni_alpha & abs(log2_fold_change) > 1)
+significant_genes <- rownames(log2_rat_dataset)[sig_index]
+cat("Significant genes:\n")
 print(significant_genes)
 
-```
-
-6. Transform the p-value (-1*log10(p-value)) and create a volcano plot with the p-value and fold change vectors (see the lecture notes).  Make sure to use a log10 transformation for the p-value and a log2 (R function log2()) transformation for the fold change.  Draw the horizontal lines at fold values of 2 and -2 (log2 value=1) and the vertical p-value threshold line at p=.05
-```{r}
-log10_pvalues = -log10(t_test_pvalues)
-
-# Plot the graph
-plot(log2_fold_change, log10_pvalues,
-     pch = 20, col = "grey",
-     xlab = "Log2 Fold Change",
-     ylab = "-Log10 p-value",
-     main = "Volcano Plot")
-
-# Add vertical and horizontal lines at fold change = ±1 (log2 scale)
-abline(v = c(-1, 1), col = "blue", lty = 2)
-abline(h = -log10(0.05), col = "red", lty = 2)
-
-# Highlight significant points
-sig_index <- which(t_test_pvalues < 0.05 & abs(log2_fold_change) > 1)
-points(log2_fold_change[sig_index], log10_pvalues[sig_index], col = "red", pch = 20)
-
-```
+# 7. Visualise summary combining fold change magnitude and statistical significance using volcano plot
+log10_pvalues <- -log10(t_test_pvalues)
+plot(log2_fold_change, log10_pvalues, pch=20, col="grey",
+     xlab="Log2 Fold Change", ylab="-Log10 p-value",
+     main="Volcano Plot: Ketogenic vs Control Diet")
+abline(v=c(-1,1), col="blue", lty=2)           # Fold change threshold ±1 (log2 scale)
+abline(h=-log10(0.05), col="red", lty=2)      # p-value threshold 0.05
+points(log2_fold_change[sig_index], log10_pvalues[sig_index], col="red", pch=20)
