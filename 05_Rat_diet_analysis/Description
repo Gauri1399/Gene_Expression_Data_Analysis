@@ -1,30 +1,31 @@
+# Rat Ketogenic vs Control Diet Gene Expression Analysis
 
-## Rat Gene Expression Analysis: Ketogenic vs Control Diet
+## Project Overview
+This project investigates the impact of a **ketogenic diet** on gene expression in rats. Using high-throughput gene expression data, it identifies genes that are significantly altered by diet and visualizes these differences. The goal is to explore how dietary interventions influence metabolic and cellular processes.
 
-This project performs differential gene expression analysis on rat microarray data to compare the effects of a **ketogenic diet** versus a **control diet**. Using statistical methods such as **t-tests**, **fold-change analysis**, and **volcano plots**, the analysis identifies significantly differentially expressed genes.
+## Dataset
+- **Rows:** Genes/probesets  
+- **Columns:** Samples from rats on either **ketogenic diet** or **control diet**  
+- **Format:** Tab-delimited text file with genes as row names and samples as column names  
 
----
+## Analysis Purpose
+- Normalize and transform data (log2) to stabilize variance  
+- Perform **Student’s t-tests** to identify genes differentially expressed between diet groups  
+- Calculate **fold changes** to quantify the magnitude of gene expression differences  
+- Adjust for multiple testing using **Bonferroni correction**  
+- Visualize results with **p-value histograms** and **volcano plots**  
 
-### Features:
+## Biological Significance
+- Reveals genes and pathways influenced by a ketogenic diet  
+- Highlights potential roles in **energy metabolism, lipid processing, inflammation, and mitochondrial function**  
+- Provides candidate genes for follow-up studies to understand diet-related physiological effects  
 
-* Log2 transformation of gene expression data
-* Group separation based on diet (control vs ketogenic)
-* Student's t-tests for each probeset
-* p-value histogram and Bonferroni correction
-* Calculation of fold change (log2 and linear scale)
-* Identification of significant genes
-* Volcano plot visualization
+## Key Results
+- List of significantly differentially expressed genes  
+- Fold change statistics for all genes  
+- Volcano plots showing both magnitude and significance of gene expression changes  
 
----
-
-### Files:
-
-* `rat_KD.txt`: Input gene expression dataset
----
-
-### Tools Used:
-
-* R / R Markdown
-* Base R functions: `t.test()`, `log2()`, `hist()`, `plot()`
-* Basic statistical and data visualization techniques
-
+## How to Use
+1. Clone the repository  
+2. Open the R Markdown file (`Rat_Keto_vs_Control.Rmd`)  
+3. Knit to HTML to view interactive plots and results  
