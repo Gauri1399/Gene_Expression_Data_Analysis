@@ -17,7 +17,7 @@ library(reshape2)
 library(shiny)
 
 # 1. Load the data
-data_cdc15 <- read.table("/Users/gauri1399/Desktop/Classes/Sem3/Gene expression/Lab2/02_Paul_Spellman.txt", header = TRUE, row.names = 1)
+data_cdc15 <- read.table("/Data/02_Paul_Spellman.txt", header = TRUE, row.names = 1)
 
 # 2. Compute correlation matrix
 cor_matrix <- cor(data_cdc15, use = "pairwise.complete.obs")
