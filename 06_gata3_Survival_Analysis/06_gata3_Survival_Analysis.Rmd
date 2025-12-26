@@ -14,8 +14,8 @@ library(multtest)
 ## 1. Brain Aging Microarray Analysis
 
 # Load Data
-brain_aging <- read.table("/Users/gauri1399/Desktop/Classes/Sem3/Gene expression/Lab6/agingStudyAffy.txt", header = TRUE, row.names = 1)
-brain_aging_annotation <- read.table("/Users/gauri1399/Desktop/Classes/Sem3/Gene expression/Lab6/agingStudyAnnAffy.txt", header = TRUE, row.names = 1)
+brain_aging <- read.table("Data/06_gata3_datasets/agingStudyAffy.txt", header = TRUE, row.names = 1)
+brain_aging_annotation <- read.table("Data/06_gata3_datasets/agingStudyAnnAffy.txt", header = TRUE, row.names = 1)
 
 # Classify by gender
 gender_vector <- brain_aging_annotation$Gender
@@ -70,8 +70,8 @@ legend("topleft", legend=c("Raw", "Holm"), lty=c(1,2), col=c("black","blue"), lw
 ## 4. TCGA Breast Cancer RNA-seq Analysis
 
 # Load Data
-tcga <- read.table("/Users/gauri1399/Desktop/Classes/Sem3/Gene expression/Lab6/tcga_brca_fpkm.txt", header=TRUE, row.names=1, check.names=FALSE)
-tcga_annotation <- read.table("/Users/gauri1399/Desktop/Classes/Sem3/Gene expression/Lab6/tcga_brca_fpkm_sam.txt", header=TRUE, sep="\t", stringsAsFactors=FALSE, check.names=FALSE)
+tcga <- read.table("Data/06_gata3_datasets/tcga_brca_fpkm.txt", header=TRUE, row.names=1, check.names=FALSE)
+tcga_annotation <- read.table("Data/06_gata3_datasets/tcga_brca_fpkm_sam.txt", header=TRUE, sep="\t", stringsAsFactors=FALSE, check.names=FALSE)
 
 # GATA3 Expression Grouping
 gata3_idx <- grep("^GATA3(\\b|\\|)", rownames(tcga), perl = TRUE)
