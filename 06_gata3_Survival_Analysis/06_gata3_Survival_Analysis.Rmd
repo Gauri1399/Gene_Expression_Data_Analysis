@@ -1,0 +1,115 @@
+---
+title: "Brain Aging and Breast Cancer Gene Expression Analysis"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r full-analysis, echo=TRUE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(survival)
+library(limma)
+library(multtest)
+
+## 1. Brain Aging Microarray Analysis
+
+# Load Data
+brain_aging <- read.table("/Users/gauri1399/Desktop/Classes/Sem3/Gene expression/Lab6/agingStudyAffy.txt", header = TRUE, row.names = 1)
+brain_aging_annotation <- read.table("/Users/gauri1399/Desktop/Classes/Sem3/Gene expression/Lab6/agingStudyAnnAffy.txt", header = TRUE, row.names = 1)
+
+# Classify by gender
+gender_vector <- brain_aging_annotation$Gender
+brain_aging_female <- brain_aging[, gender_vector == "F"]
+brain_aging_male <- brain_aging[, gender_vector == "M"]
+
+# Classify by age
+age_vector <- brain_aging_annotation$Age
+brain_age_less50 <- brain_aging[, age_vector < 50]
+brain_age_more50 <- brain_aging[, age_vector >= 50]
+
+## 2. Differential Expression Analysis
+
+# Define gene vectors
+g.g <- c(1394, 1474, 1917, 2099, 2367, 2428, 2625, 3168, 3181, 3641, 3832, 4526, 4731, 4863, 6062, 6356, 6684, 6787, 6900, 7223, 7244, 7299, 8086, 8652, 8959, 9073, 9145, 9389, 10219, 11238, 11669, 11674, 11793)
+g.a <- c(25, 302, 1847, 2324, 246, 2757, 3222, 3675, 4429, 4430, 4912, 5640, 5835, 5856, 6803, 7229, 7833, 8133, 8579, 8822, 8994, 10101, 11433, 12039, 12353, 12404, 12442, 67, 88, 100)
+
+t.test.all.genes <- function(x, s1, s2) {
+x1 <- as.numeric(x[s1])
+x2 <- as.numeric(x[s2])
+t.out <- t.test(x1, x2, alternative = "two.sided", var.equal = TRUE)
+return(t.out$p.value)
+}
+
+rawp_gender <- apply(brain_aging[g.g, ], 1, t.test.all.genes, s1 = colnames(brain_aging_female), s2 = colnames(brain_aging_male))
+rawp_age <- apply(brain_aging[g.a, ], 1, t.test.all.genes, s1 = colnames(brain_age_less50), s2 = colnames(brain_age_more50))
+
+# Adjust p-values
+gender_p_adj <- p.adjust(rawp_gender, method = "holm")
+age_p_adj <- p.adjust(rawp_age, method = "holm")
+
+## 3. P-Value Visualization
+
+# Sort p-values
+sort_p_adj_gender <- sort(gender_p_adj)
+sort_p_gender <- sort(rawp_gender)
+sort_p_adj_age <- sort(age_p_adj)
+sort_p_age <- sort(rawp_age)
+
+par(mfrow = c(1,2))
+
+# Gender
+plot(seq_along(sort_p_gender), sort_p_gender, type="l", lwd=2, xlab="Index", ylab="p-value", main="Gender: Raw vs Holm")
+lines(seq_along(sort_p_adj_gender), sort_p_adj_gender, lwd=2, lty=2, col="red")
+legend("topleft", legend=c("Raw", "Holm"), lty=c(1,2), col=c("black","red"), lwd=2, bty="n")
+
+# Age
+plot(seq_along(sort_p_age), sort_p_age, type="l", lwd=2, xlab="Index", ylab="p-value", main="Age: Raw vs Holm")
+lines(seq_along(sort_p_adj_age), sort_p_adj_age, lwd=2, lty=2, col="blue")
+legend("topleft", legend=c("Raw", "Holm"), lty=c(1,2), col=c("black","blue"), lwd=2, bty="n")
+
+## 4. TCGA Breast Cancer RNA-seq Analysis
+
+# Load Data
+tcga <- read.table("/Users/gauri1399/Desktop/Classes/Sem3/Gene expression/Lab6/tcga_brca_fpkm.txt", header=TRUE, row.names=1, check.names=FALSE)
+tcga_annotation <- read.table("/Users/gauri1399/Desktop/Classes/Sem3/Gene expression/Lab6/tcga_brca_fpkm_sam.txt", header=TRUE, sep="\t", stringsAsFactors=FALSE, check.names=FALSE)
+
+# GATA3 Expression Grouping
+gata3_idx <- grep("^GATA3(\\b|\\|)", rownames(tcga), perl = TRUE)
+gata3 <- as.numeric(tcga[gata3_idx[1], ])
+threshold <- quantile(gata3, 0.75, na.rm = TRUE)
+gata3_expression_group <- ifelse(gata3 >= threshold, 1, 0)
+
+## 5. Survival Analysis
+
+time <- as.numeric(tcga_annotation$months_to_event)
+status <- as.integer(toupper(tcga_annotation$vital_status) == "LIVING")
+keep <- complete.cases(time, status, gata3_expression_group)
+data <- data.frame(
+time = time[keep],
+status = status[keep],
+group = gata3_expression_group[keep]
+)
+
+# Kaplan-Meier
+km_fit <- survfit(Surv(time, status) ~ group, data=data)
+km_test <- survdiff(Surv(time, status) ~ group, data=data)
+km.p <- 1 - pchisq(km_test$chisq, df = length(km_test$n)-1)
+
+# Cox PH
+coxfit <- coxph(Surv(time, status) ~ group, data=data)
+summ_coxfit <- summary(coxfit)
+hazard_ratio <- unname(summ_coxfit$coef["group", "exp(coef)"])
+p_cox <- summ_coxfit$coef["group", "Pr(>|z|)"]
+
+# Plot KM
+plot(km_fit, lwd=2, col=c("blue","orange"), xlab="Time (months)", ylab="Survival probability",
+main="GATA3: Upper Quartile vs Others")
+legend("topright", legend=c(paste0("Others (n=", table(data$group==0), ")"),
+paste0("Upper 25% (n=", table(data$group==1), ")")),
+col=c("blue","orange"), lwd=2, bty="n")
+mtext(sprintf("KM p=%.3g | Cox p=%.3g | HR=%.2f", km.p, p_cox, hazard_ratio),
+side=3, line=0.5, cex=0.9)
+
+```
+
+
