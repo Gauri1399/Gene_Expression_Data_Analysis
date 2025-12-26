@@ -1,0 +1,231 @@
+
+---
+title: "Lab 4: Zebrafish Swirl Microarray Analysis"
+author: "Gauri Agrawal"
+date: "2025-12-25"
+output: html_document
+---
+
+```{r full-analysis, echo=TRUE, message=FALSE, warning=FALSE}
+
+# 1. Load the marray library to work with 2-channel microarray data
+library(marray)
+
+# Load the swirl dataset, which contains expression data for wildtype vs swirl mutant zebrafish
+data(swirl)
+
+
+# 2. Visualize Raw Data for Array 3 (MvA Plot)
+
+# Extract foreground intensities for the red (Cy5) and green (Cy3) channels for Array 3
+array3_Cy5 = swirl@maRf[,3]
+array3_Cy3 = swirl@maGf[,3]
+
+# Compute M-values (log2 fold-change) and A-values (average log2 intensity)
+M_array3 <- log2(array3_Cy5 / array3_Cy3)
+A_array3 <- log2(sqrt(array3_Cy5 * array3_Cy3))
+
+# Combine into a data frame for plotting
+plot_data_array3 <- data.frame(M = M_array3, A = A_array3)
+
+
+
+library(ggplot2)
+
+# Generate the MvA plot to visualize intensity-dependent bias in Array 3
+ggplot(plot_data_array3, aes(x = A, y = M)) +
+geom_point(alpha = 0.5, color = "blue") +
+labs(title = "MvA Plot for Array 3", x = "Average log-intensity (A)", y = "Log2 fold-change (M)") +
+theme_minimal()
+
+# 3. Global Median Normalization
+
+# Calculate the Cy5/Cy3 intensity ratio for global median normalization
+ratio_array3 = array3_Cy5 / array3_Cy3
+
+# Compute the median of the ratios to center the M-values
+k_array3 = median(ratio_array3)
+
+# Adjust M-values by subtracting the log2 median to normalize Array 3
+M_normalised = log2(array3_Cy5) - log2(array3_Cy3) - log2(k_array3)
+
+# 4. Plot MvA After Global Median Normalization
+
+# Combine normalized M-values with A-values for plotting
+plot_global_normalised_array3 <- data.frame(M = M_normalised, A = A_array3)
+
+# Generate MvA plot to visualize effect of global median normalization
+ggplot(plot_global_normalised_array3, aes(x = A, y = M)) +
+geom_point(alpha = 0.5, color = "red") +
+labs(title = "MvA (Normalized) Plot for Array 3", x = "Average log-intensity (A)", y = "Normalized log2 fold-change (M)") +
+theme_minimal()
+
+# 5. LOESS Normalization
+
+# Fit a LOWESS curve to capture intensity-dependent bias
+lowess_fit = lowess(A_array3, M_array3, f = 2/3)
+
+# Subtract the LOWESS trend from M-values to remove systematic bias
+M_lowess = M_array3 - approx(lowess_fit$x, lowess_fit$y, xout = A_array3)$y
+
+# Plot the LOESS-normalized MvA to visualize the correction
+plot(A_array3, M_lowess, pch = 16, cex = 0.5, col = "green",
+xlab = "Average log-intensity (A)", ylab = "LOWESS-normalized M",
+main = "MvA Plot After LOWESS Normalization for Array 3")
+
+# 6. Read GenePix Files for Patient Arrays
+
+# Define file paths for two patient samples
+file1 = "Data/04_GenePix_files/patient1.gpr"
+file2 = "Data/04_GenePix_files/patient2.gpr"
+
+# Read GenePix files into R using read.maimages from the marray package
+patient1 = read.maimages(file1, source = "genepix")
+patient2 = read.maimages(file2, source = "genepix")
+
+# 7. Normalize Patient Arrays and Plot MvA
+
+# Background correction using normexp method to remove background noise
+patient_bgcorrected = backgroundCorrect(patient1, method = "normexp")
+
+# No normalization: preserves original M-values for comparison
+MA_patient = normalizeWithinArrays(patient_bgcorrected, method = "none")
+plot_patient = data.frame(
+  M = as.vector(MA_patient$M),
+  A = as.vector(MA_patient$A)
+)
+
+
+p1 <- ggplot(plot_patient, aes(x = A, y = M)) +
+geom_point(alpha = 0.5, color = "yellow") +
+labs(title = "MvA Plot (No Normalization)", x = "Average log-intensity (A)", y = "M") +
+theme_minimal()
+
+# Print-tip LOESS normalization to correct intensity-dependent and spatial bias
+patient_norm_loess <- normalizeWithinArrays(patient_bgcorrected, method = "printtiploess")
+plot_patient_loess <- plot_patient_loess <- data.frame(
+  M = as.vector(patient_norm_loess$M),
+  A = as.vector(patient_norm_loess$A)
+)
+
+p2 <- ggplot(plot_patient_loess, aes(x = A, y = M)) +
+geom_point(alpha = 0.5, color = "green") +
+labs(title = "Print-tip LOESS Normalized MvA Plot", x = "Average log-intensity (A)", y = "M") +
+theme_minimal()
+
+# Print-tip scale normalization using MAD (Median Absolute Deviation)
+printer_order = patient_bgcorrected$printer$printtip
+M_values = patient_norm_loess$M
+M_scaled = M_values
+
+for(group in unique(printer_order)){
+idx = which(printer_order == group)
+mad_val = mad(M_values[idx])
+M_scaled[idx] = M_values[idx] / mad_val
+}
+
+patient_norm_scale = patient_norm_loess
+patient_norm_scale$M = M_scaled
+plot_patient_scale = plot_patient_scale = data.frame(
+  M = as.vector(patient_norm_scale$M),
+  A = as.vector(patient_norm_scale$A)
+)
+
+
+p3 <- ggplot(plot_patient_scale, aes(x = A, y = M)) +
+geom_point(alpha = 0.5, color = "orange") +
+labs(title = "Print-tip Scale Normalized MvA Plot", x = "Average log-intensity (A)", y = "M") +
+theme_minimal()
+
+# Display all three plots for comparison
+library(patchwork)
+p1 | p2 | p3
+
+
+# 8. Create Normalized Data Matrices for Patients
+
+# Background correction
+patient1_bgcorrected = backgroundCorrect(patient1, method = "normexp")
+patient2_bgcorrected = backgroundCorrect(patient2, method = "normexp")
+
+# Print-tip LOESS normalization
+patient1_norm_loess = normalizeWithinArrays(patient1_bgcorrected, method = "printtiploess")
+patient2_norm_loess = normalizeWithinArrays(patient2_bgcorrected, method = "printtiploess")
+
+# Extract M-values and probe IDs
+M_patient1 = patient1_norm_loess$M
+probeId_patient1 = patient1_norm_loess$genes$ID
+
+M_patient2 = patient2_norm_loess$M
+probeId_patient2 = patient2_norm_loess$genes$ID
+
+# Combine into data frames with probe IDs as reference
+data_patient1 = data.frame(M_patient1, probeId = probeId_patient1)
+data_patient2 = data.frame(M_patient2, probeId = probeId_patient2)
+
+# Rename M columns for clarity
+colnames(data_patient1)[1] = "M_patient1"
+colnames(data_patient2)[1] = "M_patient2"
+
+# Merge patient datasets using probe IDs to create combined data matrix
+combined_data = merge(data_patient1, data_patient2, by = "probeId")
+head(combined_data)
+
+# 9. Install and Load Required Libraries
+
+# Install Bioconductor and CRAN packages required for Affymetrix analysis
+#BiocManager::install(c("affy", "limma", "affyPLM", "affydata"))
+#install.packages("fpc")
+
+# Load libraries
+library(affy)
+library(limma)
+library(affyPLM)
+library(fpc)
+
+# 10. Read and Normalize Affymetrix HGU133plus Arrays
+
+# Define path to CEL files
+dir.path = "Data/04_HGU133plus_files/"
+file_names = sort(list.celfiles(path = dir.path, full.names = TRUE))
+
+# Read Affymetrix CEL files into a metadata object
+hgu_data = ReadAffy(filenames = file_names, phenoData = NULL)
+
+# Apply background correction using RMA and MAS methods
+hgu_data_rma_corrected = bg.correct(hgu_data, method = "rma")
+hgu_data_mas_corrected = bg.correct(hgu_data, method = "mas")
+
+# Normalize data using expresso with quantile normalization and median polish summarization
+rma_norm_data = expresso(hgu_data_rma_corrected, bg.correct = FALSE,
+normalize.method = "quantiles",
+summary.method = "medianpolish",
+pmcorrect.method = "pmonly")
+
+mas_norm_data = expresso(hgu_data_mas_corrected, bg.correct = FALSE,
+normalize.method = "quantiles",
+summary.method = "medianpolish",
+pmcorrect.method = "mas")
+
+# Convert normalized data into matrices (genes x samples)
+rma_matrix = exprs(rma_norm_data)
+mas_matrix = exprs(mas_norm_data)
+
+# Print dimensions to verify 54675 probes and 3 arrays
+print(dim(rma_matrix))
+print(dim(mas_matrix))
+
+# 11. Correlation Analysis of Normalized Affymetrix Arrays
+
+# Compute correlation matrices to evaluate consistency across healthy subjects
+rma_corr = cor(rma_matrix)
+mas_corr = cor(mas_matrix)
+
+# Print correlation matrices
+print("RMA Normalized Data Correlation:")
+print(rma_corr)
+
+print("MAS Normalized Data Correlation:")
+print(mas_corr)
+
+```
